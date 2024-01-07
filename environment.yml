@@ -1,0 +1,9 @@
+name: mlenv
+channels:
+  - defaults
+dependencies:
+  - pytorch-cuda=11.8
+  - pytorch
+  - torchaudio
+  - torchvision
+prefix: /home/bhumbers/anaconda3/envs/mlenv
