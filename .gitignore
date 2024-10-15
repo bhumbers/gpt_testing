@@ -1,2 +1,9 @@
 input.txt
 
+# vim temp files
+*~
+*.swp
+*.swo
+
+# jupyter stuff
+.ipynb_checkpoints
