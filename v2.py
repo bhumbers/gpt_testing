@@ -184,34 +184,37 @@ class BigramLanguageModel(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
         return idx
 
+def main() -> None:
+    m = BigramLanguageModel(vocab_size)
+    m.to(device)
 
-m = BigramLanguageModel(vocab_size)
-m.to(device)
+    optimizer = torch.optim.AdamW(m.parameters(), lr=learning_rate)
 
-optimizer = torch.optim.AdamW(m.parameters(), lr=learning_rate)
+    for iter in tqdm(range(max_iters)):
+        
+        # ever once in a while, eval the loss on train & val sets
+        if iter % eval_interval == 0:
+            losses = estimate_loss()
+            print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
-for iter in tqdm(range(max_iters)):
-    
-    # ever once in a while, eval the loss on train & val sets
-    if iter % eval_interval == 0:
-        losses = estimate_loss()
-        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        # every once in a while, save a checkpoint
+        if iter % 200 == 0:
+            torch.save(m, f"model_{iter:06}.pt")
 
-    # every once in a while, save a checkpoint
-    if iter % 200 == 0:
-        torch.save(m, f"model_{iter:06}.pt")
+        # sample a batch of data
+        xb, yb = get_batch('train')
 
-    # sample a batch of data
-    xb, yb = get_batch('train')
+        # evaluate the loss
+        logits, loss = m(xb, yb)
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
 
-    # evaluate the loss
-    logits, loss = m(xb, yb)
-    optimizer.zero_grad(set_to_none=True)
-    loss.backward()
-    optimizer.step()
+    print(f"Final loss: {loss.item()}")
 
-print(f"Final loss: {loss.item()}")
+    # generate from the model
+    context = torch.zeros((1, 1), dtype=torch.long, device=device)
+    print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
 
-# generate from the model
-context = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
+if __name__ == "__main__":
+    main()
